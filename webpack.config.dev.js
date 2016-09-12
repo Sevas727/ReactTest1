@@ -1,43 +1,112 @@
-import webpack from 'webpack';
-import path from 'path';
+var webpack = require('webpack');
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var ManifestPlugin = require('webpack-manifest-plugin');
+var ChunkManifestPlugin = require('chunk-manifest-webpack-plugin');
+var cssnext = require('postcss-cssnext');
+var postcssFocus = require('postcss-focus');
+var postcssReporter = require('postcss-reporter');
+var cssnano = require('cssnano');
 
-export default {
-  debug: true,
-  devtool: 'cheap-module-eval-source-map',
-  noInfo: false,
-  entry: [
-    'eventsource-polyfill', // necessary for hot reloading with IE
-    'webpack-hot-middleware/client?reload=true', //note that it reloads the page if hot module reloading fails.
-    './src/index'
-  ],
-  target: 'web',
-  output: {
-    path: __dirname + '/dist', // Note: Physical files are only output by the production build task `npm run build`.
-    publicPath: '/',
-    filename: 'bundle.js'
-  },
-  devServer: {
-    contentBase: './src'
-  },
-  plugins: [
-    new webpack.HotModuleReplacementPlugin(),
-    new webpack.NoErrorsPlugin(),
-    new webpack.ProvidePlugin({
-          jQuery: 'jquery',
-          $: 'jquery',
-          jquery: 'jquery'
-      })
-  ],
-  module: {
-    loaders: [
-      {test: /\.js$/, include: path.join(__dirname, 'src'), loaders: ['babel']},
-      {test: /(\.css)$/, loaders: ['style', 'css']},
-      {test: /\.scss$/, loaders: ["style", "css", "sass"]},
-      {test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file"},
-      {test: /\.(woff|woff2|otf)$/, loader: "url?prefix=font/&limit=5000"},
-      {test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=application/octet-stream"},
-      {test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: "url?limit=10000&mimetype=image/svg+xml"},
-      {test: /\.(png|jpg)$/, loader: "file?name=[path][name].[ext]"}
-    ]
-  }
+/*     {
+ test: /\.css$/,
+ exclude: /node_modules/,
+ loader: ExtractTextPlugin.extract('style-loader', 'css-loader?localIdentName=[hash:base64]&modules&importLoaders=1!postcss-loader'),
+ },*/
+module.exports = {
+    devtool: 'hidden-source-map',
+
+    entry: {
+        app: [
+            './client/index.js',
+        ],
+        vendor: [
+            'react',
+            'react-dom',
+        ]
+    },
+
+    output: {
+        path: __dirname + '/dist/',
+        filename: '[name].[chunkhash].js',
+        publicPath: '/',
+    },
+
+    resolve: {
+        extensions: ['', '.js', '.jsx'],
+        modules: [
+            'client',
+            'node_modules',
+        ],
+    },
+
+    module: {
+        loaders: [
+
+            {test: /(\.css)$/, loaders: ['style', 'css']},
+            {test: /\.scss$/, loaders: ["style", "css", "sass"]},
+            {
+                test: /\.jsx*$/,
+                exclude: /node_modules/,
+                loader: 'babel',
+            }, {
+                test: /\.(jpe?g|gif|png|svg)$/i,
+                loader: 'url-loader?limit=10000',
+            },
+            {
+                test: /\.(eot|ttf|woff|woff2|otf)$/,
+                loader: 'file?name=public/fonts/[name].[ext]'
+            },
+            //  {test: /\.(woff|woff2|otf)$/, loader: "url?prefix=font/&limit=5000"},
+
+            {
+                test: /\.json$/,
+                loader: 'json-loader',
+            },
+        ],
+    },
+
+    plugins: [
+
+        new webpack.ProvidePlugin({
+            jQuery: 'jquery',
+            $: 'jquery',
+            jquery: 'jquery'
+        }),
+        new webpack.DefinePlugin({
+            'process.env': {
+                'NODE_ENV': JSON.stringify('production'),
+            }
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: 'vendor',
+            minChunks: Infinity,
+            filename: 'vendor.js',
+        }),
+        new ExtractTextPlugin('app.[chunkhash].css', { allChunks: true }),
+        new ManifestPlugin({
+            basePath: '/',
+        }),
+        new ChunkManifestPlugin({
+            filename: "chunk-manifest.json",
+            manifestVariable: "webpackManifest",
+        }),
+        new webpack.optimize.UglifyJsPlugin({
+            compressor: {
+                warnings: false,
+            }
+        }),
+    ],
+
+    postcss: () => [
+        postcssFocus(),
+        cssnext({
+            browsers: ['last 2 versions', 'IE > 10'],
+        }),
+        cssnano({
+            autoprefixer: false
+        }),
+        postcssReporter({
+            clearMessages: true,
+        }),
+    ],
 };
