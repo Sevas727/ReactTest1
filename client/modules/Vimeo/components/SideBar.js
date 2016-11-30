@@ -29,13 +29,5 @@ const SideBar = ({}) => {
         );
     };
 
-
-SideBar.propTypes = {
- //   user: PropTypes.object.isRequired
-};
-
 export default SideBar;
 
-//  <img src={`${user.pictures.sizes[3].link}`} alt="#"/>
-
-//{user.name}

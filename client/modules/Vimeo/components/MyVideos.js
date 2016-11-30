@@ -9,7 +9,6 @@ class MyVideos extends Component {
 
     componentDidMount() {
         this.props.dispatch(getData());
-        console.log("this.props.videos", this.props.videos);
     }
 
     render() {
